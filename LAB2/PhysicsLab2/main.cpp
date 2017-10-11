@@ -25,13 +25,13 @@
 #include <iostream>
 
 bool setAirborne(bool inAir);
-
 int main()
 {
 	sf::Time timeInAir = sf::Time::Zero;
-
+	bool velocityMinus = false;
 	bool isAirborne = false;
 	bool reachedMax = false;
+	bool setup = true;
 	float maxHeight=0;
 
 	sf::Text text;
@@ -63,7 +63,7 @@ int main()
 	shape.setFillColor(sf::Color::Green);
 
 	sf::Vector2f velocity(0, 0);
-	sf::Vector2f position(400, 699);
+	sf::Vector2f position(400, 698);
 	sf::Vector2f gravity(0.0f, 0.0f);
 
 	sf::Clock airtimeClock; //start the clock (by instantiating it)
@@ -91,13 +91,14 @@ int main()
 				{
 					if (!isAirborne)
 					{
-						isAirborne = setAirborne(isAirborne); //swaps bool for in air
+						isAirborne = true; //swaps bool for in air
 						//after playing around with values for about 5 - 10 mins I found this number 
 						//which gives me the perfect: hits 100 m above start point for long enough
 						//to output only one message to console
 						velocity += sf::Vector2f(0.0f, -44.271f);
 						gravity = { 0.0f, 9.8f };
 						airtimeClock.restart(); // restart the clock here since it has been counting since it was instatiated earlier
+						setup = false;
 					}
 				}
 			}
@@ -117,15 +118,23 @@ int main()
 			//update shape on screen 
 			shape.setPosition(position);
 			//collision
-			if (position.y >= plane.getPosition().y)
+			if (position.y >= plane.getPosition().y -1)
 			{
-				velocity = { 0,0 };
-				//of course gravity will not actually be equal to 0 here, simplest to set like this until next space press though
-				gravity = { 0,0 }; 
+				gravity.y = 0;
+				isAirborne = false;
 				position.y = plane.getPosition().y - 1;
-				isAirborne = setAirborne(isAirborne); //swaps bool for in air
+				if (!setup)
+				{
+					velocity.y -= 10;
+					velocity.y = velocity.y * -1;
+				}
 			}
-			if (isAirborne)
+			else
+			{
+				gravity.y = 9.8f;
+				isAirborne = true;
+			}
+			if (isAirborne && !setup)
 			{
 				timeInAir += airtimeClock.restart(); // add time elapsed since last checked this and restart the clock.
 				if (!reachedMax)
