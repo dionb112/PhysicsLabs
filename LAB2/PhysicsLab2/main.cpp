@@ -27,12 +27,14 @@
 bool setAirborne(bool inAir);
 int main()
 {
+	float cooeficiantOfRestitution = 0.4;
+	const float pixelsToMeters = 20.0f;
 	sf::Time timeInAir = sf::Time::Zero;
 	bool velocityMinus = false;
 	bool isAirborne = false;
 	bool reachedMax = false;
-	bool setup = true;
-	float maxHeight=0;
+	float maxHeight = 0;
+	float hRange = 0;
 
 	sf::Text text;
 	sf::Font font;
@@ -48,10 +50,9 @@ int main()
 	//tested what result I should get online using provided formula and got: -9.03489795918.
 	//The result I get using this system is VERY close to that so I am happy. (likely just a rounding issue)
 	//The same goes for expected distance (slightly off but SO close)
-	text.setString("Expected max height = " + std::to_string((pow(44.271f, 2) / (2 * 9.8))) + " meters\n" +
-		"Actual max height = " + std::to_string(maxHeight) + " meters from ground\n\n" +
-		"Expected time taken = " + std::to_string(44.271f * 2 / 9.8) + " seconds" +
-		"\nActual time taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!");
+	text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
+		"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
+		"\nHorizontal Range = " + std::to_string(hRange) + "m");
 
 	sf::RectangleShape plane;
 	plane.setPosition(sf::Vector2f{ 0, 700 });
@@ -59,12 +60,13 @@ int main()
 
 	sf::RenderWindow window(sf::VideoMode(800, 800), "GO PHYSICS");
 
-	sf::CircleShape shape(0.5f);
+	sf::CircleShape shape(10.0f);
 	shape.setFillColor(sf::Color::Green);
+	shape.setOrigin(10, 10);
 
 	sf::Vector2f velocity(0, 0);
-	sf::Vector2f position(400, 698);
-	sf::Vector2f gravity(0.0f, 0.0f);
+	sf::Vector2f position(20, 700 - pixelsToMeters / 2);
+	sf::Vector2f gravity(0.0f, 0.0f * pixelsToMeters);
 
 	sf::Clock airtimeClock; //start the clock (by instantiating it)
 	sf::Clock clock;
@@ -85,23 +87,27 @@ int main()
 				window.close();
 			}
 
-			if (event.type == sf::Event::KeyPressed)
+
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			{
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+				if (!isAirborne)
 				{
-					if (!isAirborne)
-					{
-						isAirborne = true; //swaps bool for in air
-						//after playing around with values for about 5 - 10 mins I found this number 
-						//which gives me the perfect: hits 100 m above start point for long enough
-						//to output only one message to console
-						velocity += sf::Vector2f(0.0f, -44.271f);
-						gravity = { 0.0f, 9.8f };
-						airtimeClock.restart(); // restart the clock here since it has been counting since it was instatiated earlier
-						setup = false;
-					}
+					isAirborne = true; //swaps bool for in air
+					//after playing around with values for about 5 - 10 mins I found this number 
+					//which gives me the perfect: hits 100 m above start point for long enough
+					//to output only one message to console
+					velocity += sf::Vector2f(90, -100);
+					gravity = { 0.0f, 9.8f * pixelsToMeters };
+					airtimeClock.restart(); // restart the clock here since it has been counting since it was instatiated earlier
 				}
 			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+			{
+				velocity = sf::Vector2f(0, 0);
+				position = sf::Vector2f(20, 700 - pixelsToMeters / 2);
+				gravity = sf::Vector2f(0.0f, 0.0f * pixelsToMeters);
+			}
+
 		}
 		//get the time since last update and restart the clock
 		timeSinceLastUpdate += clock.restart();
@@ -118,43 +124,33 @@ int main()
 			//update shape on screen 
 			shape.setPosition(position);
 			//collision
-			if (position.y >= plane.getPosition().y -1)
+			if (position.y > plane.getPosition().y - pixelsToMeters / 2)
 			{
-				gravity.y = 0;
 				isAirborne = false;
-				position.y = plane.getPosition().y - 1;
-				if (!setup)
-				{
-					velocity.y -= 10;
-					velocity.y = velocity.y * -1;
-				}
+				velocity.y = -cooeficiantOfRestitution*velocity.y;
+
 			}
-			else
-			{
-				gravity.y = 9.8f;
-				isAirborne = true;
-			}
-			if (isAirborne && !setup)
+
+			if (isAirborne)
 			{
 				timeInAir += airtimeClock.restart(); // add time elapsed since last checked this and restart the clock.
 				if (!reachedMax)
 				{
-					maxHeight = (position.y - 699) * -1;
+					if (690 - position.y > maxHeight)
+					{
+						maxHeight = (690 - position.y); // current pos - start point
+					}
+					else
+					{
+						reachedMax = true;
+						std::cout << "WE high boys" << std::endl;
+					}
 				}
-				//setting the string again every update with updated numbers for realtime output
-				text.setString("Expected max height = " + std::to_string((pow(44.271f, 2) / (2 * 9.8))) + " meters\n" +
-					"Actual max height = " + std::to_string(maxHeight) + " meters from ground\n\n" +
-					"Expected time taken = " + std::to_string(44.271f * 2 / 9.8) + " seconds" +
-					"\nActual time taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!");
 			}
-
-			if (position.y <= 599) // 100 m above start point
-			{
-				maxHeight = (position.y - 699) * -1; // current pos - start point
-				reachedMax = true;
-				std::cout << "WE high boys" << std::endl;
-			}
-
+			//setting the string again every update with updated numbers for realtime output
+			text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
+				"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
+				"\nHorizontal Range = " + std::to_string(hRange) + "m");
 			window.draw(shape);
 			window.draw(plane);
 			window.draw(text);
@@ -163,8 +159,8 @@ int main()
 
 			timeSinceLastUpdate = sf::Time::Zero;
 		}
+		return 0;
 	}
-	return 0;
 }
 /// <summary>
 /// function to flip the bool status of in air for the circle
