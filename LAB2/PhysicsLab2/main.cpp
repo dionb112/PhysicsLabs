@@ -27,14 +27,15 @@
 bool setAirborne(bool inAir);
 int main()
 {
-	float cooeficiantOfRestitution = 0.4;
+	const float cooeficiantOfRestitution = 1;
 	const float pixelsToMeters = 20.0f;
 	sf::Time timeInAir = sf::Time::Zero;
 	bool velocityMinus = false;
 	bool isAirborne = false;
-	bool reachedMax = false;
+	bool firstBase = false;
 	float maxHeight = 0;
 	float hRange = 0;
+	sf::Vector2f userValues = { 90, -100 };
 
 	sf::Text text;
 	sf::Font font;
@@ -92,11 +93,8 @@ int main()
 			{
 				if (!isAirborne)
 				{
-					isAirborne = true; //swaps bool for in air
-					//after playing around with values for about 5 - 10 mins I found this number 
-					//which gives me the perfect: hits 100 m above start point for long enough
-					//to output only one message to console
-					velocity += sf::Vector2f(90, -100);
+					isAirborne = true; 
+					velocity += userValues;
 					gravity = { 0.0f, 9.8f * pixelsToMeters };
 					airtimeClock.restart(); // restart the clock here since it has been counting since it was instatiated earlier
 				}
@@ -106,8 +104,42 @@ int main()
 				velocity = sf::Vector2f(0, 0);
 				position = sf::Vector2f(20, 700 - pixelsToMeters / 2);
 				gravity = sf::Vector2f(0.0f, 0.0f * pixelsToMeters);
-			}
+				isAirborne = false;
+				maxHeight = 0;
+				hRange = 0;
+				timeInAir = sf::Time::Zero;
+				userValues = { 90, -100 };
+				firstBase = false;
 
+			}
+			//increase angle of projection
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+			{
+				userValues.x -= 5;
+				userValues.y -= 5;
+				std::cout << "angle of projection increased" << std::endl;
+			}
+			//decrease angle of proj
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::U))
+			{
+				userValues.x += 5;
+				userValues.y += 5;
+				std::cout << "angle of projection decreased" << std::endl;
+			}
+			//increase vel
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::V))
+			{
+				userValues.x += 5;
+				userValues.y -= 5;
+				std::cout << "initial velocity increased" << std::endl;
+			}
+			//decrease vel
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::B))
+			{
+				userValues.x -= 5;
+				userValues.y += 5;
+				std::cout << "initial velocity decreased" << std::endl;
+			}
 		}
 		//get the time since last update and restart the clock
 		timeSinceLastUpdate += clock.restart();
@@ -126,31 +158,29 @@ int main()
 			//collision
 			if (position.y > plane.getPosition().y - pixelsToMeters / 2)
 			{
-				isAirborne = false;
-				velocity.y = -cooeficiantOfRestitution*velocity.y;
 
-			}
+				velocity.y = cooeficiantOfRestitution*velocity.y * -1;
 
-			if (isAirborne)
-			{
-				timeInAir += airtimeClock.restart(); // add time elapsed since last checked this and restart the clock.
-				if (!reachedMax)
+				if (!firstBase)
 				{
-					if (690 - position.y > maxHeight)
-					{
-						maxHeight = (690 - position.y); // current pos - start point
-					}
-					else
-					{
-						reachedMax = true;
-						std::cout << "WE high boys" << std::endl;
-					}
+					hRange = position.x;
+					firstBase = true;
+					//setting the string again every update with updated numbers for realtime output
+					text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
+						"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
+						"\nHorizontal Range = " + std::to_string(hRange) + "m");
 				}
 			}
-			//setting the string again every update with updated numbers for realtime output
-			text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
-				"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
-				"\nHorizontal Range = " + std::to_string(hRange) + "m");
+			if (!firstBase)
+			{
+				timeInAir += airtimeClock.restart(); // add time elapsed since last checked this and restart the clock.
+
+				if (690 - position.y > maxHeight)
+				{
+					maxHeight = (690 - position.y); // current pos - start point
+				}
+			}
+
 			window.draw(shape);
 			window.draw(plane);
 			window.draw(text);
@@ -159,8 +189,8 @@ int main()
 
 			timeSinceLastUpdate = sf::Time::Zero;
 		}
-		return 0;
 	}
+	return 0;
 }
 /// <summary>
 /// function to flip the bool status of in air for the circle
