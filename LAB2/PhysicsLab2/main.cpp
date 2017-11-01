@@ -27,7 +27,7 @@
 bool setAirborne(bool inAir);
 int main()
 {
-	const float cooeficiantOfRestitution = 1;
+	const float cooeficiantOfRestitution = 0.777f;
 	const float pixelsToMeters = 20.0f;
 	sf::Time timeInAir = sf::Time::Zero;
 	bool velocityMinus = false;
@@ -110,6 +110,10 @@ int main()
 				timeInAir = sf::Time::Zero;
 				userValues = { 90, -100 };
 				firstBase = false;
+				//setting the string again every update with updated numbers for realtime output
+				text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
+					"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
+					"\nHorizontal Range = " + std::to_string(hRange) + "m");
 
 			}
 			//increase angle of projection
@@ -156,12 +160,11 @@ int main()
 			//update shape on screen 
 			shape.setPosition(position);
 			//collision
-			if (position.y > plane.getPosition().y - pixelsToMeters / 2)
+			if (position.y > plane.getPosition().y - pixelsToMeters / 2 - 1)
 			{
-
 				velocity.y = cooeficiantOfRestitution*velocity.y * -1;
 
-				if (!firstBase)
+				if (isAirborne && !firstBase)
 				{
 					hRange = position.x;
 					firstBase = true;
