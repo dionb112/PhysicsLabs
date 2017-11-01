@@ -162,6 +162,7 @@ int main()
 			//collision
 			if (position.y > plane.getPosition().y - pixelsToMeters / 2 - 1)
 			{
+				position.y = plane.getPosition().y - pixelsToMeters / 2;
 				velocity.y = cooeficiantOfRestitution*velocity.y * -1;
 
 				if (isAirborne && !firstBase)
