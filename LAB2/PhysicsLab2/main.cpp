@@ -1,9 +1,9 @@
 /// <summary>
 /// Allow a circle to move up and down	along y axis under influence of gravity (9.8) only 
 /// [an initial  force is applied to start motion]
-/// 
+/// Extending to project a missile and hit a target, under coefficient of air resist
 /// @author Dion Buckley
-/// @date October 2017
+/// @date October / November 2017
 /// </summary>
 
 #ifdef _DEBUG 
@@ -23,10 +23,14 @@
 #include <SFML/Graphics.hpp>
 #include <math.h>
 #include <iostream>
+#include <ctime>
+#include <cstdlib>
 
 bool setAirborne(bool inAir);
 int main()
 {
+	srand(time(NULL));
+
 	const float cooeficiantOfRestitution = 0.777f;
 	const float pixelsToMeters = 20.0f;
 	sf::Time timeInAir = sf::Time::Zero;
@@ -48,9 +52,7 @@ int main()
 	text.setCharacterSize(20);
 	text.Italic;
 	text.setFillColor(sf::Color::Red);
-	//tested what result I should get online using provided formula and got: -9.03489795918.
-	//The result I get using this system is VERY close to that so I am happy. (likely just a rounding issue)
-	//The same goes for expected distance (slightly off but SO close)
+	
 	text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
 		"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
 		"\nHorizontal Range = " + std::to_string(hRange) + "m");
@@ -64,6 +66,11 @@ int main()
 	sf::CircleShape shape(10.0f);
 	shape.setFillColor(sf::Color::Green);
 	shape.setOrigin(10, 10);
+
+	sf::CircleShape target(20.0f);
+	target.setFillColor(sf::Color::Red);
+	target.setOrigin(20, 20);
+	target.setPosition(rand() % 800 + 200, 700 - pixelsToMeters * 2 );
 
 	sf::Vector2f velocity(0, 0);
 	sf::Vector2f position(20, 700 - pixelsToMeters / 2);
@@ -184,7 +191,7 @@ int main()
 					maxHeight = (690 - position.y); // current pos - start point
 				}
 			}
-
+			window.draw(target);
 			window.draw(shape);
 			window.draw(plane);
 			window.draw(text);
