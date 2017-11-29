@@ -26,20 +26,19 @@
 #include <ctime>
 #include <cstdlib>
 
-bool setAirborne(bool inAir);
+
 int main()
 {
+	const double PI = 3.14159265359;
+	const float PIXELS_TO_METERS = 20.0f;
+
 	srand(time(NULL));
 
-	const float cooeficiantOfRestitution = 0.777f;
-	const float pixelsToMeters = 20.0f;
-	sf::Time timeInAir = sf::Time::Zero;
-	bool velocityMinus = false;
-	bool isAirborne = false;
-	bool firstBase = false;
-	float maxHeight = 0;
-	float hRange = 0;
-	sf::Vector2f userValues = { 90, -100 };
+	int targetAttempts = 0;
+	float coefficientOfAirResist = 0.5f;
+	double initialVelocity = 100;
+	double angleOfProjection = -45; // the 360 degree circle seems to be on minus for this project..
+	bool canFire = true;
 
 	sf::Text text;
 	sf::Font font;
@@ -51,12 +50,8 @@ int main()
 	text.setPosition(sf::Vector2f{ 150,10 });
 	text.setCharacterSize(20);
 	text.Italic;
-	text.setFillColor(sf::Color::Red);
+	text.setFillColor(sf::Color::Magenta);
 	
-	text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
-		"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
-		"\nHorizontal Range = " + std::to_string(hRange) + "m");
-
 	sf::RectangleShape plane;
 	plane.setPosition(sf::Vector2f{ 0, 700 });
 	plane.setSize(sf::Vector2f{ 800, 40 });
@@ -70,13 +65,12 @@ int main()
 	sf::CircleShape target(20.0f);
 	target.setFillColor(sf::Color::Red);
 	target.setOrigin(20, 20);
-	target.setPosition(rand() % 800 + 200, 700 - pixelsToMeters * 2 );
+	target.setPosition( rand() % 780 , 700 - PIXELS_TO_METERS * 2 );
 
 	sf::Vector2f velocity(0, 0);
-	sf::Vector2f position(20, 700 - pixelsToMeters / 2);
-	sf::Vector2f gravity(0.0f, 0.0f * pixelsToMeters);
+	sf::Vector2f position(20, 700 - PIXELS_TO_METERS / 2);
+	sf::Vector2f gravity(0.0f, 0.0f * PIXELS_TO_METERS);
 
-	sf::Clock airtimeClock; //start the clock (by instantiating it)
 	sf::Clock clock;
 	const float FPS = 60.0f;
 	const sf::Time timePerFrame = sf::seconds(1.0f / 60.0f);
@@ -90,7 +84,7 @@ int main()
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
-			if (event.type == sf::Event::Closed)
+			if (event.type == sf::Event::Closed || sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
 			{
 				window.close();
 			}
@@ -98,58 +92,62 @@ int main()
 
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			{
-				if (!isAirborne)
+				if (canFire)
 				{
-					isAirborne = true; 
-					velocity += userValues;
-					gravity = { 0.0f, 9.8f * pixelsToMeters };
-					airtimeClock.restart(); // restart the clock here since it has been counting since it was instatiated earlier
+					canFire = false;
+
+					velocity.x = initialVelocity * cos(angleOfProjection * PI / 180);
+					velocity.y = initialVelocity * sin(angleOfProjection * PI / 180);
+
+					gravity = { 0.0f, 9.8f * PIXELS_TO_METERS };
 				}
 			}
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
-			{
-				velocity = sf::Vector2f(0, 0);
-				position = sf::Vector2f(20, 700 - pixelsToMeters / 2);
-				gravity = sf::Vector2f(0.0f, 0.0f * pixelsToMeters);
-				isAirborne = false;
-				maxHeight = 0;
-				hRange = 0;
-				timeInAir = sf::Time::Zero;
-				userValues = { 90, -100 };
-				firstBase = false;
-				//setting the string again every update with updated numbers for realtime output
-				text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
-					"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
-					"\nHorizontal Range = " + std::to_string(hRange) + "m");
-
-			}
-			//increase angle of projection
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
-			{
-				userValues.x -= 5;
-				userValues.y -= 5;
-				std::cout << "angle of projection increased" << std::endl;
-			}
-			//decrease angle of proj
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::U))
-			{
-				userValues.x += 5;
-				userValues.y += 5;
-				std::cout << "angle of projection decreased" << std::endl;
-			}
-			//increase vel
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::V))
-			{
-				userValues.x += 5;
-				userValues.y -= 5;
-				std::cout << "initial velocity increased" << std::endl;
-			}
-			//decrease vel
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::B))
 			{
-				userValues.x -= 5;
-				userValues.y += 5;
-				std::cout << "initial velocity decreased" << std::endl;
+				velocity = sf::Vector2f(0, 0);
+				position = sf::Vector2f(20, 700 - PIXELS_TO_METERS / 2);
+				gravity = sf::Vector2f(0.0f, 0.0f * PIXELS_TO_METERS);
+				canFire = true;
+			}
+			// not to repeat calls upon key released
+			if (event.type == event.KeyPressed)
+			{
+				//increase angle of projection
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+				{
+					angleOfProjection--;
+				}
+				//decrease angle of proj
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::U))
+				{
+					angleOfProjection++;
+				}
+				//increase vel
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::V))
+				{
+					initialVelocity = initialVelocity + 2;
+				}
+				//decrease vel
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))
+				{
+					initialVelocity = initialVelocity - 2;
+				}
+				//increase air resist
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
+				{
+					if (coefficientOfAirResist < 1)
+					{
+						coefficientOfAirResist += 0.1;
+					}
+				}
+				//decrease air resist
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
+				{
+					if (coefficientOfAirResist >= 0.1) // > 0 allowed one extra for some reason . .
+					{
+						coefficientOfAirResist -= 0.1;
+					}
+				}
 			}
 		}
 		//get the time since last update and restart the clock
@@ -157,40 +155,40 @@ int main()
 		//update every 60th of a second
 		if (timeSinceLastUpdate > timePerFrame)
 		{
+			text.setString(
+				"Angle of projection: " + std::to_string(angleOfProjection * -1) +
+				"\nInitial Speed: " + std::to_string(initialVelocity) +
+				"\nCoefficient of air resist: " + std::to_string(coefficientOfAirResist) +
+				"\nAttemps on target: " + std::to_string(targetAttempts));
+
 			window.clear();
 
-			//update position and velocity here using equations in lab sheet using :
 			//timeChange as timeSinceLastUpdate.asSecond()
 			float timeChange = timeSinceLastUpdate.asSeconds();
+
+			//update position and velocity here using equations in lab sheet
+			sf::Vector2f accel = gravity;
 			position = position + velocity * timeChange + 0.5f * gravity * pow(timeChange, 2);
 			velocity = velocity + gravity * timeChange;
+
+			//TODO: How to use coefficient of air with motion ?! 
+
 			//update shape on screen 
 			shape.setPosition(position);
 			//collision
-			if (position.y > plane.getPosition().y - pixelsToMeters / 2 - 1)
+			if (position.y > plane.getPosition().y - PIXELS_TO_METERS / 2)
 			{
-				position.y = plane.getPosition().y - pixelsToMeters / 2;
-				velocity.y = cooeficiantOfRestitution*velocity.y * -1;
-
-				if (isAirborne && !firstBase)
-				{
-					hRange = position.x;
-					firstBase = true;
-					//setting the string again every update with updated numbers for realtime output
-					text.setString("Max height = " + std::to_string(maxHeight) + " meters from ground" +
-						"\nTime taken = " + std::to_string(timeInAir.asSeconds()) + " seconds in air!" +
-						"\nHorizontal Range = " + std::to_string(hRange) + "m");
-				}
+				velocity = sf::Vector2f(0, 0);
+				position.y = 700 - PIXELS_TO_METERS / 2;
+				gravity = sf::Vector2f(0.0f, 0.0f * PIXELS_TO_METERS);
+				targetAttempts++;
 			}
-			if (!firstBase)
+			if (position.x - target.getPosition().x < 20 && position.y - target.getPosition().y < 20)
 			{
-				timeInAir += airtimeClock.restart(); // add time elapsed since last checked this and restart the clock.
-
-				if (690 - position.y > maxHeight)
-				{
-					maxHeight = (690 - position.y); // current pos - start point
-				}
+				//TODO: hit target functionality
+				std::cout << "hit target";
 			}
+
 			window.draw(target);
 			window.draw(shape);
 			window.draw(plane);
@@ -202,21 +200,4 @@ int main()
 		}
 	}
 	return 0;
-}
-/// <summary>
-/// function to flip the bool status of in air for the circle
-/// </summary>
-/// <param name="inAir"></param>
-/// <returns></returns>
-bool setAirborne(bool inAir)
-{
-	if (inAir)
-	{
-		inAir = false;
-	}
-	else
-	{
-		inAir = true;
-	}
-	return inAir;
 }
