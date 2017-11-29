@@ -2,6 +2,10 @@
 /// Allow a circle to move up and down	along y axis under influence of gravity (9.8) only 
 /// [an initial  force is applied to start motion]
 /// Extending to project a missile and hit a target, under coefficient of air resist
+/// 
+/// mass (1) * acceleration = mass (1) * gravity - air resistamnce
+/// gravity here is length of velocity * velocity
+/// 
 /// @author Dion Buckley
 /// @date October / November 2017
 /// </summary>
@@ -34,8 +38,10 @@ int main()
 
 	srand(time(NULL));
 
+	int mass = 1;
+	sf::Vector2f acceleration{ 0,0 };
 	int targetAttempts = 0;
-	float coefficientOfAirResist = 0.5f;
+	float coefficientOfAirResist = 0.001f;
 	double initialVelocity = 100;
 	double angleOfProjection = -45; // the 360 degree circle seems to be on minus for this project..
 	bool canFire = true;
@@ -62,6 +68,11 @@ int main()
 	shape.setFillColor(sf::Color::Green);
 	shape.setOrigin(10, 10);
 
+	sf::CircleShape shadow(10.0f);
+	shadow.setFillColor(sf::Color::Yellow);
+	shadow.setOrigin(10, 10);
+	float range = 0;
+
 	sf::CircleShape target(20.0f);
 	target.setFillColor(sf::Color::Red);
 	target.setOrigin(20, 20);
@@ -69,7 +80,7 @@ int main()
 
 	sf::Vector2f velocity(0, 0);
 	sf::Vector2f position(20, 700 - PIXELS_TO_METERS / 2);
-	sf::Vector2f gravity(0.0f, 0.0f * PIXELS_TO_METERS);
+	sf::Vector2f gravity(0.0f, 9.8f * PIXELS_TO_METERS);
 
 	sf::Clock clock;
 	const float FPS = 60.0f;
@@ -99,14 +110,17 @@ int main()
 					velocity.x = initialVelocity * cos(angleOfProjection * PI / 180);
 					velocity.y = initialVelocity * sin(angleOfProjection * PI / 180);
 
-					gravity = { 0.0f, 9.8f * PIXELS_TO_METERS };
+
+					float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
+
+					acceleration = gravity -(coefficientOfAirResist / mass) * length * velocity;
 				}
 			}
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::B))
 			{
 				velocity = sf::Vector2f(0, 0);
 				position = sf::Vector2f(20, 700 - PIXELS_TO_METERS / 2);
-				gravity = sf::Vector2f(0.0f, 0.0f * PIXELS_TO_METERS);
+				acceleration = sf::Vector2f{ 0,0 };
 				canFire = true;
 			}
 			// not to repeat calls upon key released
@@ -137,17 +151,21 @@ int main()
 				{
 					if (coefficientOfAirResist < 1)
 					{
-						coefficientOfAirResist += 0.1;
+						coefficientOfAirResist += 0.001;
 					}
 				}
 				//decrease air resist
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
 				{
-					if (coefficientOfAirResist >= 0.1) // > 0 allowed one extra for some reason . .
+					if (coefficientOfAirResist >= 0.001) // > 0 allowed one extra for some reason . .
 					{
-						coefficientOfAirResist -= 0.1;
+						coefficientOfAirResist -= 0.001;
 					}
 				}
+
+				// shadow ball
+				range = initialVelocity * initialVelocity * sin(2 * -1 * angleOfProjection * PI / 180) / gravity.y;
+				shadow.setPosition(range + position.x, position.y);
 			}
 		}
 		//get the time since last update and restart the clock
@@ -167,9 +185,8 @@ int main()
 			float timeChange = timeSinceLastUpdate.asSeconds();
 
 			//update position and velocity here using equations in lab sheet
-			sf::Vector2f accel = gravity;
-			position = position + velocity * timeChange + 0.5f * gravity * pow(timeChange, 2);
-			velocity = velocity + gravity * timeChange;
+			position = position + velocity * timeChange + 0.5f * acceleration * pow(timeChange, 2);
+			velocity = velocity + acceleration * timeChange;
 
 			//TODO: How to use coefficient of air with motion ?! 
 
@@ -178,19 +195,23 @@ int main()
 			//collision
 			if (position.y > plane.getPosition().y - PIXELS_TO_METERS / 2)
 			{
+				acceleration = sf::Vector2f{ 0,0 };
 				velocity = sf::Vector2f(0, 0);
 				position.y = 700 - PIXELS_TO_METERS / 2;
-				gravity = sf::Vector2f(0.0f, 0.0f * PIXELS_TO_METERS);
 				targetAttempts++;
+
+				
+
 			}
-			if (position.x - target.getPosition().x < 20 && position.y - target.getPosition().y < 20)
+			if (shape.getGlobalBounds().intersects(target.getGlobalBounds()))
 			{
 				//TODO: hit target functionality
-				std::cout << "hit target";
+				std::cout << "You hit the target" << std::endl;
 			}
 
 			window.draw(target);
 			window.draw(shape);
+			window.draw(shadow);
 			window.draw(plane);
 			window.draw(text);
 
