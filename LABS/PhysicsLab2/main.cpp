@@ -2,12 +2,15 @@
 /// Allow a circle to move up and down	along y axis under influence of gravity (9.8) only 
 /// [an initial  force is applied to start motion]
 /// Extending to project a missile and hit a target, under coefficient of air resist
+/// Extending to create animations for:
+///		1. Jumping	2. Moving and Jumping	3. Walking 
 /// 
-/// mass (1) * acceleration = mass (1) * gravity - air resistamnce
-/// gravity here is length of velocity * velocity
+/// Notes:
+///		mass (1) * acceleration = mass (1) * gravity - air resistamnce
+///		gravity here is length of velocity * velocity
 /// 
 /// @author Dion Buckley
-/// @date October / November 2017
+/// @date October 2017 - January 2018
 /// </summary>
 
 #ifdef _DEBUG 
@@ -43,7 +46,7 @@ int main()
 	int targetAttempts = 0;
 	float coefficientOfAirResist = 0.001f;
 	double initialVelocity = 100;
-	double angleOfProjection = -45; // the 360 degree circle seems to be on minus for this project..
+	double angleOfProjection = -45; 
 	bool canFire = true;
 
 	sf::Text text;
@@ -64,9 +67,10 @@ int main()
 
 	sf::RenderWindow window(sf::VideoMode(800, 800), "GO PHYSICS");
 
-	sf::CircleShape shape(10.0f);
+	sf::RectangleShape shape;
 	shape.setFillColor(sf::Color::Green);
-	shape.setOrigin(10, 10);
+	shape.setOrigin(20, 20);
+	shape.setSize(sf::Vector2f{ 40, 40 });
 
 	sf::CircleShape shadow(10.0f);
 	shadow.setFillColor(sf::Color::Yellow);
@@ -107,7 +111,6 @@ int main()
 				{
 					canFire = false;
 
-					velocity.x = initialVelocity * cos(angleOfProjection * PI / 180);
 					velocity.y = initialVelocity * sin(angleOfProjection * PI / 180);
 
 
