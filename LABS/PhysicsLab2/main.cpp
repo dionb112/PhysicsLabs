@@ -45,6 +45,8 @@ int main()
 	sf::Vector2f acceleration{ 0,0 };
 	int targetAttempts = 0;
 	float coefficientOfAirResist = 0.001f;
+	float coefficientOfFriction = 0.8f;
+	sf::Vector2f unitVelocity{ 0,0 };
 	double initialVelocity = 100;
 	double angleOfProjection = -45; 
 	bool canFire = true;
@@ -83,7 +85,7 @@ int main()
 	target.setPosition( rand() % 780 , 700 - PIXELS_TO_METERS * 2 );
 
 	sf::Vector2f velocity(0, 0);
-	sf::Vector2f position(20, 700 - PIXELS_TO_METERS / 2);
+	sf::Vector2f position(420, 690 - PIXELS_TO_METERS / 2);
 	sf::Vector2f gravity(0.0f, 9.8f * PIXELS_TO_METERS);
 
 	sf::Clock clock;
@@ -119,51 +121,77 @@ int main()
 					acceleration = gravity -(coefficientOfAirResist / mass) * length * velocity;
 				}
 			}
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::B))
+			/*if (sf::Keyboard::isKeyPressed(sf::Keyboard::B))
 			{
 				velocity = sf::Vector2f(0, 0);
-				position = sf::Vector2f(20, 700 - PIXELS_TO_METERS / 2);
+				position = sf::Vector2f(20, 690 - PIXELS_TO_METERS / 2);
 				acceleration = sf::Vector2f{ 0,0 };
 				canFire = true;
-			}
+			}*/
 			// not to repeat calls upon key released
 			if (event.type == event.KeyPressed)
 			{
-				//increase angle of projection
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+				////increase angle of projection
+				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+				//{
+				//	angleOfProjection--;
+				//}
+				////decrease angle of proj
+				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::U))
+				//{
+				//	angleOfProjection++;
+				//}
+				////increase vel
+				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::V))
+				//{
+				//	initialVelocity = initialVelocity + 2;
+				//}
+				////decrease vel
+				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))
+				//{
+				//	initialVelocity = initialVelocity - 2;
+				//}
+				////increase air resist
+				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
+				//{
+				//	if (coefficientOfAirResist < 1)
+				//	{
+				//		coefficientOfAirResist += 0.001;
+				//	}
+				//}
+				////decrease air resist
+				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
+				//{
+				//	if (coefficientOfAirResist >= 0.001) // > 0 allowed one extra for some reason . .
+				//	{
+				//		coefficientOfAirResist -= 0.001;
+				//	}
+				//}
+
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 				{
-					angleOfProjection--;
+					velocity.x = initialVelocity * sin(angleOfProjection * PI / 180);
+
+					float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
+
+					acceleration = gravity - (coefficientOfAirResist / mass) * length * velocity;
+
+					unitVelocity = velocity / length;
+
+					acceleration.x = -coefficientOfFriction * acceleration.x * unitVelocity.x;
+					acceleration.y = -coefficientOfFriction * acceleration.y * unitVelocity.y;
 				}
-				//decrease angle of proj
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::U))
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 				{
-					angleOfProjection++;
-				}
-				//increase vel
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::V))
-				{
-					initialVelocity = initialVelocity + 2;
-				}
-				//decrease vel
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))
-				{
-					initialVelocity = initialVelocity - 2;
-				}
-				//increase air resist
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
-				{
-					if (coefficientOfAirResist < 1)
-					{
-						coefficientOfAirResist += 0.001;
-					}
-				}
-				//decrease air resist
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
-				{
-					if (coefficientOfAirResist >= 0.001) // > 0 allowed one extra for some reason . .
-					{
-						coefficientOfAirResist -= 0.001;
-					}
+					velocity.x = -initialVelocity * sin(angleOfProjection * PI / 180);
+					float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
+
+					acceleration = gravity - (coefficientOfAirResist / mass) * length * velocity;
+
+					unitVelocity = velocity / length;
+
+					acceleration.x = -coefficientOfFriction * acceleration.x * unitVelocity.x;
+					acceleration.y = -coefficientOfFriction * acceleration.y * unitVelocity.y;
 				}
 
 				// shadow ball
@@ -196,14 +224,13 @@ int main()
 			//update shape on screen 
 			shape.setPosition(position);
 			//collision
-			if (position.y > plane.getPosition().y - PIXELS_TO_METERS / 2)
+ 			if (position.y > 690 - PIXELS_TO_METERS / 2)
 			{
-				acceleration = sf::Vector2f{ 0,0 };
-				velocity = sf::Vector2f(0, 0);
-				position.y = 700 - PIXELS_TO_METERS / 2;
 				targetAttempts++;
-
-				
+				velocity = sf::Vector2f(0, 0);
+				position.y = 690 - PIXELS_TO_METERS / 2;
+				acceleration = sf::Vector2f{ 0,0 };
+				canFire = true;
 
 			}
 			if (shape.getGlobalBounds().intersects(target.getGlobalBounds()))
@@ -212,11 +239,11 @@ int main()
 				std::cout << "You hit the target" << std::endl;
 			}
 
-			window.draw(target);
+			//window.draw(target);
 			window.draw(shape);
-			window.draw(shadow);
+			//window.draw(shadow); 
 			window.draw(plane);
-			window.draw(text);
+			//window.draw(text);
 
 			window.display();
 
