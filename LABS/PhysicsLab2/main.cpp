@@ -114,84 +114,23 @@ int main()
 					canFire = false;
 
 					velocity.y = initialVelocity * sin(angleOfProjection * PI / 180);
-
-
-					float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
-
-					acceleration = gravity -(coefficientOfAirResist / mass) * length * velocity;
+					acceleration = gravity;
 				}
 			}
-			/*if (sf::Keyboard::isKeyPressed(sf::Keyboard::B))
-			{
-				velocity = sf::Vector2f(0, 0);
-				position = sf::Vector2f(20, 690 - PIXELS_TO_METERS / 2);
-				acceleration = sf::Vector2f{ 0,0 };
-				canFire = true;
-			}*/
-			// not to repeat calls upon key released
+
 			if (event.type == event.KeyPressed)
 			{
-				////increase angle of projection
-				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
-				//{
-				//	angleOfProjection--;
-				//}
-				////decrease angle of proj
-				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::U))
-				//{
-				//	angleOfProjection++;
-				//}
-				////increase vel
-				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::V))
-				//{
-				//	initialVelocity = initialVelocity + 2;
-				//}
-				////decrease vel
-				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))
-				//{
-				//	initialVelocity = initialVelocity - 2;
-				//}
-				////increase air resist
-				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::C))
-				//{
-				//	if (coefficientOfAirResist < 1)
-				//	{
-				//		coefficientOfAirResist += 0.001;
-				//	}
-				//}
-				////decrease air resist
-				//if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
-				//{
-				//	if (coefficientOfAirResist >= 0.001) // > 0 allowed one extra for some reason . .
-				//	{
-				//		coefficientOfAirResist -= 0.001;
-				//	}
-				//}
+
 
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 				{
-					velocity.x = initialVelocity * sin(angleOfProjection * PI / 180);
-
-					float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
-
-					acceleration = gravity - (coefficientOfAirResist / mass) * length * velocity;
-
-					unitVelocity = velocity / length;
-
-					acceleration.x = -coefficientOfFriction * acceleration.x * unitVelocity.x;
-					acceleration.y = -coefficientOfFriction * acceleration.y * unitVelocity.y;
+					velocity.x = -initialVelocity;
+					acceleration = gravity;
 				}
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 				{
-					velocity.x = -initialVelocity * sin(angleOfProjection * PI / 180);
-					float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
-
-					acceleration = gravity - (coefficientOfAirResist / mass) * length * velocity;
-
-					unitVelocity = velocity / length;
-
-					acceleration.x = -coefficientOfFriction * acceleration.x * unitVelocity.x;
-					acceleration.y = -coefficientOfFriction * acceleration.y * unitVelocity.y;
+					velocity.x = initialVelocity;
+					acceleration = gravity;
 				}
 
 				// shadow ball
@@ -215,14 +154,27 @@ int main()
 			//timeChange as timeSinceLastUpdate.asSecond()
 			float timeChange = timeSinceLastUpdate.asSeconds();
 
+			// update acceleration based on friction and length of velocity vector
+			float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
+			if (length != 0)
+			{
+				unitVelocity.x = velocity.x / length;
+				unitVelocity.y = velocity.y / length;
+			}
+			if (canFire)
+			{
+				acceleration.x = -coefficientOfFriction * acceleration.x * unitVelocity.x;
+				acceleration.y = -coefficientOfFriction * acceleration.y * unitVelocity.y;
+				velocity *= coefficientOfFriction;
+			}
+
 			//update position and velocity here using equations in lab sheet
 			position = position + velocity * timeChange + 0.5f * acceleration * pow(timeChange, 2);
 			velocity = velocity + acceleration * timeChange;
 
-			//TODO: How to use coefficient of air with motion ?! 
-
 			//update shape on screen 
 			shape.setPosition(position);
+
 			//collision
  			if (position.y > 690 - PIXELS_TO_METERS / 2)
 			{
