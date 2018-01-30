@@ -36,20 +36,17 @@
 
 int main()
 {
+	const int MAX_VEL = 200;
 	const double PI = 3.14159265359;
 	const float PIXELS_TO_METERS = 20.0f;
 
 	srand(time(NULL));
 
-	int mass = 1;
 	sf::Vector2f acceleration{ 0,0 };
-	int targetAttempts = 0;
-	float coefficientOfAirResist = 0.001f;
 	float coefficientOfFriction = 0.8f;
 	sf::Vector2f unitVelocity{ 0,0 };
 	double initialVelocity = 100;
-	double angleOfProjection = -45; 
-	bool canFire = true;
+	bool canJump = true;
 
 	sf::Text text;
 	sf::Font font;
@@ -67,22 +64,12 @@ int main()
 	plane.setPosition(sf::Vector2f{ 0, 700 });
 	plane.setSize(sf::Vector2f{ 800, 40 });
 
-	sf::RenderWindow window(sf::VideoMode(800, 800), "GO PHYSICS");
+	sf::RenderWindow window(sf::VideoMode(800, 800), "GOoOoO PHYSICS");
 
 	sf::RectangleShape shape;
 	shape.setFillColor(sf::Color::Green);
 	shape.setOrigin(20, 20);
 	shape.setSize(sf::Vector2f{ 40, 40 });
-
-	sf::CircleShape shadow(10.0f);
-	shadow.setFillColor(sf::Color::Yellow);
-	shadow.setOrigin(10, 10);
-	float range = 0;
-
-	sf::CircleShape target(20.0f);
-	target.setFillColor(sf::Color::Red);
-	target.setOrigin(20, 20);
-	target.setPosition( rand() % 780 , 700 - PIXELS_TO_METERS * 2 );
 
 	sf::Vector2f velocity(0, 0);
 	sf::Vector2f position(420, 690 - PIXELS_TO_METERS / 2);
@@ -106,36 +93,28 @@ int main()
 				window.close();
 			}
 
-
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			{
-				if (canFire)
+				if (canJump)
 				{
-					canFire = false;
+					canJump = false;
 
-					velocity.y = initialVelocity * sin(angleOfProjection * PI / 180);
-					acceleration = gravity;
+					velocity.y = -initialVelocity;
 				}
 			}
 
 			if (event.type == event.KeyPressed)
 			{
-
-
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 				{
 					velocity.x = -initialVelocity;
-					acceleration = gravity;
 				}
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 				{
-					velocity.x = initialVelocity;
-					acceleration = gravity;
+						velocity.x = initialVelocity;
 				}
 
-				// shadow ball
-				range = initialVelocity * initialVelocity * sin(2 * -1 * angleOfProjection * PI / 180) / gravity.y;
-				shadow.setPosition(range + position.x, position.y);
+				
 			}
 		}
 		//get the time since last update and restart the clock
@@ -143,15 +122,9 @@ int main()
 		//update every 60th of a second
 		if (timeSinceLastUpdate > timePerFrame)
 		{
-			text.setString(
-				"Angle of projection: " + std::to_string(angleOfProjection * -1) +
-				"\nInitial Speed: " + std::to_string(initialVelocity) +
-				"\nCoefficient of air resist: " + std::to_string(coefficientOfAirResist) +
-				"\nAttemps on target: " + std::to_string(targetAttempts));
-
 			window.clear();
 
-			//timeChange as timeSinceLastUpdate.asSecond()
+			// timeChange as timeSinceLastUpdate.asSecond()
 			float timeChange = timeSinceLastUpdate.asSeconds();
 
 			// update acceleration based on friction and length of velocity vector
@@ -159,43 +132,41 @@ int main()
 			if (length != 0)
 			{
 				unitVelocity.x = velocity.x / length;
-				unitVelocity.y = velocity.y / length;
 			}
-			if (canFire)
+			
+			// no friction in the aaiirr
+			if (canJump)
 			{
-				acceleration.x = -coefficientOfFriction * acceleration.x * unitVelocity.x;
-				acceleration.y = -coefficientOfFriction * acceleration.y * unitVelocity.y;
-				velocity *= coefficientOfFriction;
+				acceleration.x = -coefficientOfFriction * gravity.y * unitVelocity.x;
+			}
+			else
+			{
+				acceleration = gravity;
 			}
 
-			//update position and velocity here using equations in lab sheet
+			if (velocity.x < 0.5f  && velocity.x > -0.5f)
+			{
+				velocity.x = 0;
+			}
+
+			// update position and velocity here using equations in lab sheet
 			position = position + velocity * timeChange + 0.5f * acceleration * pow(timeChange, 2);
 			velocity = velocity + acceleration * timeChange;
 
-			//update shape on screen 
+			// update shape on screen 
 			shape.setPosition(position);
 
-			//collision
+			// collision with plane
  			if (position.y > 690 - PIXELS_TO_METERS / 2)
 			{
-				targetAttempts++;
-				velocity = sf::Vector2f(0, 0);
 				position.y = 690 - PIXELS_TO_METERS / 2;
-				acceleration = sf::Vector2f{ 0,0 };
-				canFire = true;
+				acceleration.y = 0;
+				canJump = true;
 
 			}
-			if (shape.getGlobalBounds().intersects(target.getGlobalBounds()))
-			{
-				//TODO: hit target functionality
-				std::cout << "You hit the target" << std::endl;
-			}
 
-			//window.draw(target);
 			window.draw(shape);
-			//window.draw(shadow); 
 			window.draw(plane);
-			//window.draw(text);
 
 			window.display();
 
