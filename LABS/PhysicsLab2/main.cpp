@@ -99,7 +99,7 @@ int main()
 				{
 					canJump = false;
 
-					velocity.y = -initialVelocity;
+					velocity.y = -initialVelocity * 2;
 				}
 			}
 
@@ -122,6 +122,15 @@ int main()
 		//update every 60th of a second
 		if (timeSinceLastUpdate > timePerFrame)
 		{
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+			{
+				velocity.x = -initialVelocity;
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+			{
+				velocity.x = initialVelocity;
+			}
+
 			window.clear();
 
 			// timeChange as timeSinceLastUpdate.asSecond()
