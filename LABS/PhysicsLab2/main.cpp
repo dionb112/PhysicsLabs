@@ -93,6 +93,14 @@ int main()
 				window.close();
 			}
 
+			
+	
+		}
+		//get the time since last update and restart the clock
+		timeSinceLastUpdate += clock.restart();
+		//update every 60th of a second
+		if (timeSinceLastUpdate > timePerFrame)
+		{
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			{
 				if (canJump)
@@ -103,25 +111,6 @@ int main()
 				}
 			}
 
-			if (event.type == event.KeyPressed)
-			{
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-				{
-					velocity.x = -initialVelocity;
-				}
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-				{
-						velocity.x = initialVelocity;
-				}
-
-				
-			}
-		}
-		//get the time since last update and restart the clock
-		timeSinceLastUpdate += clock.restart();
-		//update every 60th of a second
-		if (timeSinceLastUpdate > timePerFrame)
-		{
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 			{
 				velocity.x = -initialVelocity;
