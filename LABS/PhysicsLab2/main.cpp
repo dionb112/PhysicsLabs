@@ -49,8 +49,8 @@ int main()
 	sf::Vector2f velocity{ 0.0f,0.0f };
 	sf::Vector2f accelerationVector;
 	float acceleration = 0.42f;
-	int fuel = 333;
 	int lives = 3;
+	int score = 0;
 
 	// Bullet stuff
 	sf::CircleShape bullet;
@@ -93,7 +93,12 @@ int main()
 	text.setCharacterSize(20);
 	text.Italic;
 	text.setFillColor(sf::Color::Magenta);
-	text.setString("Player Lives: " + std::to_string(lives));
+	text.setString("Player Lives: " + std::to_string(lives) + "							Player Score: " + std::to_string(score));
+
+	sf::CircleShape target(20.0f);
+	target.setFillColor(sf::Color::Red);
+	target.setOrigin(20, 20);
+	target.setPosition(700, 200);
 
 	sf::RenderWindow window(sf::VideoMode(800, 800), "GOoOoO PHYSICS");
 
@@ -157,17 +162,16 @@ int main()
 			}
 			
 			// collision with plane
-			if (position.y > 690 - PIXELS_TO_METERS / 2)
+			if (position.y > 690 - PIXELS_TO_METERS / 2 || playerSprite.getGlobalBounds().intersects(target.getGlobalBounds()))
 			{
 				
 				lives--;
-				text.setString("Player Lives: " + std::to_string(lives));
+				text.setString("Player Lives: " + std::to_string(lives) + "							Player Score: " + std::to_string(score));
 				rotation = 0;
 				turnRate = 4.0f;
 				position ={ 333, 70 };
 				velocity = { 0.0f,0.0f };
 				acceleration = 0.42f;
-				fuel = 333;
 
 				if (lives == 0)
 				{
@@ -177,20 +181,24 @@ int main()
 				}
 			}
 
+			// target collision
+			if (bullet.getGlobalBounds().intersects(target.getGlobalBounds()))
+			{
+				score++;
+				text.setString("Player Lives: " + std::to_string(lives) + "							Player Score: " + std::to_string(score));
+				target.setPosition(rand() % 780, rand() % 780);
+
+			}
+
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
 			{
-				if (fuel > 0)
-				{
-					float x = std::sin(rotation * PI / 180.0);
-					float y = -std::cos(rotation * PI / 180.0);
+				float x = std::sin(rotation * PI / 180.0);
+				float y = -std::cos(rotation * PI / 180.0);
 
-					accelerationVector = sf::Vector2f{ x, y };
+				accelerationVector = sf::Vector2f{ x, y };
 
-					velocity.x += accelerationVector.x * acceleration;
-					velocity.y += accelerationVector.y * acceleration;
-
-					fuel--;
-				}
+				velocity.x += accelerationVector.x * acceleration;
+				velocity.y += accelerationVector.y * acceleration;
 			}
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 			{
@@ -214,7 +222,7 @@ int main()
 					bulletVelocity.x += bulletVelocity.x * speed;
 					bulletVelocity.y += bulletVelocity.y * speed;
 
-					timer = 60;
+					timer = 90;
 					bulletActive = true;
 				}
 			}
@@ -227,6 +235,7 @@ int main()
 			window.draw(playerSprite);
 			bullet.setPosition(bulletPosition);
 			window.draw(bullet);
+			window.draw(target);
 			window.draw(plane);
 			window.draw(text);
 			window.display();
