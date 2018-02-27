@@ -36,17 +36,38 @@
 
 int main()
 {
+	const float PIXELS_TO_METERS = 20.0f;
 	const int MAX_VEL = 200;
 	const double PI = 3.14159265359;
-	const float PIXELS_TO_METERS = 20.0f;
+
+	// Player stuff
+	sf::Texture playerTexture;
+	sf::Sprite playerSprite;
+	float rotation = 0;
+	float turnRate = 4.0f;
+	sf::Vector2f position{ 333, 70 };
+	sf::Vector2f velocity{ 0.0f,0.0f };
+	sf::Vector2f accelerationVector;
+	float acceleration = 0.42f;
+	int fuel = 333;
+	int lives = 3;
+
+	// Bullet stuff
+	sf::CircleShape bullet;
+	sf::Vector2f bulletPosition;
+	int radius = 2;
+	sf::Vector2f bulletVelocity;
+	double speed = 10;
+	bool bulletActive = false;
+	int timer = 0;
+	bullet.setFillColor(sf::Color::Red);
+	bullet.setRadius(2);
+
+	sf::Vector2f gravity(0.0f, 9.8f);
+
+	bool gameOver = false;
 
 	srand(time(NULL));
-
-	sf::Vector2f acceleration{ 0,0 };
-	float coefficientOfFriction = 0.8f;
-	sf::Vector2f unitVelocity{ 0,0 };
-	double initialVelocity = 100;
-	bool canJump = true;
 
 	sf::Text text;
 	sf::Font font;
@@ -54,26 +75,27 @@ int main()
 	{
 		std::cout << " Error with font loading";
 	}
+	if (!playerTexture.loadFromFile("ship.png"))
+	{
+		std::cout << "problem loading player texture file";
+	}
+
+	playerSprite.setTexture(playerTexture);
+	playerSprite.setOrigin(32, 32);
+	playerSprite.setPosition(position);
+
+	sf::RectangleShape plane;
+	plane.setPosition(sf::Vector2f{ 0, 700 });
+	plane.setSize(sf::Vector2f{ 800, 40 });
+
 	text.setFont(font);
 	text.setPosition(sf::Vector2f{ 150,10 });
 	text.setCharacterSize(20);
 	text.Italic;
 	text.setFillColor(sf::Color::Magenta);
-	
-	sf::RectangleShape plane;
-	plane.setPosition(sf::Vector2f{ 0, 700 });
-	plane.setSize(sf::Vector2f{ 800, 40 });
+	text.setString("Player Lives: " + std::to_string(lives));
 
 	sf::RenderWindow window(sf::VideoMode(800, 800), "GOoOoO PHYSICS");
-
-	sf::RectangleShape shape;
-	shape.setFillColor(sf::Color::Green);
-	shape.setOrigin(20, 20);
-	shape.setSize(sf::Vector2f{ 40, 40 });
-
-	sf::Vector2f velocity(0, 0);
-	sf::Vector2f position(420, 690 - PIXELS_TO_METERS / 2);
-	sf::Vector2f gravity(0.0f, 9.8f * PIXELS_TO_METERS);
 
 	sf::Clock clock;
 	const float FPS = 60.0f;
@@ -82,7 +104,7 @@ int main()
 
 	clock.restart();
 
-	while (window.isOpen())
+	while (window.isOpen() )
 	{
 		//read keyboard input
 		sf::Event event;
@@ -99,73 +121,114 @@ int main()
 		//get the time since last update and restart the clock
 		timeSinceLastUpdate += clock.restart();
 		//update every 60th of a second
-		if (timeSinceLastUpdate > timePerFrame)
+		if (timeSinceLastUpdate > timePerFrame && !gameOver)
 		{
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-			{
-				if (canJump)
-				{
-					canJump = false;
-
-					velocity.y = -initialVelocity * 2;
-				}
-			}
-
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-			{
-				velocity.x = -initialVelocity;
-			}
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-			{
-				velocity.x = initialVelocity;
-			}
-
-			window.clear();
 
 			// timeChange as timeSinceLastUpdate.asSecond()
 			float timeChange = timeSinceLastUpdate.asSeconds();
 
-			// update acceleration based on friction and length of velocity vector
-			float length = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
-			if (length != 0)
-			{
-				unitVelocity.x = velocity.x / length;
-			}
-			
-			// no friction in the aaiirr
-			if (canJump)
-			{
-				acceleration.x = -coefficientOfFriction * gravity.y * unitVelocity.x;
-			}
-			else
-			{
-				acceleration = gravity;
-			}
+			position += velocity;
 
-			if (velocity.x < 0.5f  && velocity.x > -0.5f)
-			{
-				velocity.x = 0;
-			}
+			velocity.x = velocity.x * 0.99; //slow down tommy
+			velocity.y = velocity.y * 0.99; //slow down tommy
 
 			// update position and velocity here using equations in lab sheet
-			position = position + velocity * timeChange + 0.5f * acceleration * pow(timeChange, 2);
-			velocity = velocity + acceleration * timeChange;
+			position = position + velocity * timeChange + 0.5f * gravity * pow(timeChange, 2);
+			velocity = velocity + gravity * timeChange;
 
-			// update shape on screen 
-			shape.setPosition(position);
-
-			// collision with plane
- 			if (position.y > 690 - PIXELS_TO_METERS / 2)
+			// bullet update
+			if (bulletActive)
 			{
-				position.y = 690 - PIXELS_TO_METERS / 2;
-				acceleration.y = 0;
-				canJump = true;
+				bulletPosition += bulletVelocity;
+				
+				timer--;
+				if (timer <= 0)
+				{
+					bulletActive = false;
+				}
+			}
+			if (position.x < 0)
+			{
+				position = sf::Vector2f{ 800, position.y };
+			}
+			if (position.x > 800)
+			{
+				position = sf::Vector2f{ 0, position.y };
+			}
+			
+			// collision with plane
+			if (position.y > 690 - PIXELS_TO_METERS / 2)
+			{
+				
+				lives--;
+				text.setString("Player Lives: " + std::to_string(lives));
+				rotation = 0;
+				turnRate = 4.0f;
+				position ={ 333, 70 };
+				velocity = { 0.0f,0.0f };
+				acceleration = 0.42f;
+				fuel = 333;
 
+				if (lives == 0)
+				{
+					text.setString("Game Over !");
+					gameOver = true;
+
+				}
 			}
 
-			window.draw(shape);
-			window.draw(plane);
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+			{
+				if (fuel > 0)
+				{
+					float x = std::sin(rotation * PI / 180.0);
+					float y = -std::cos(rotation * PI / 180.0);
 
+					accelerationVector = sf::Vector2f{ x, y };
+
+					velocity.x += accelerationVector.x * acceleration;
+					velocity.y += accelerationVector.y * acceleration;
+
+					fuel--;
+				}
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+			{
+				rotation -= turnRate;
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+			{
+				rotation += turnRate;
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+			{
+				if (!bulletActive)
+				{
+					bulletPosition = position;
+
+					float x = std::sin(rotation * PI / 180.0);
+					float y = -std::cos(rotation * PI / 180.0);
+
+					bulletVelocity = sf::Vector2f{ x, y };
+
+					bulletVelocity.x += bulletVelocity.x * speed;
+					bulletVelocity.y += bulletVelocity.y * speed;
+
+					timer = 60;
+					bulletActive = true;
+				}
+			}
+
+
+			window.clear();
+
+			playerSprite.setRotation(rotation);
+			playerSprite.setPosition(position);
+			window.draw(playerSprite);
+			bullet.setPosition(bulletPosition);
+			window.draw(bullet);
+			window.draw(plane);
+			window.draw(text);
 			window.display();
 
 			timeSinceLastUpdate = sf::Time::Zero;
